@@ -1,0 +1,17 @@
+# Render Blueprint — deploy this repo as a Node web service.
+# In Render: New + → Blueprint → connect this repository (render.yaml is auto-detected).
+services:
+  - type: web
+    name: cafe-menu-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      # Pin a Node version with prebuilt better-sqlite3 binaries and Next 16 support.
+      - key: NODE_VERSION
+        value: "22"
+      # Auto-populate sample data on each fresh (empty) boot — the free tier disk
+      # is ephemeral, so this keeps the deployed API immediately demoable.
+      - key: SEED_ON_EMPTY
+        value: "true"

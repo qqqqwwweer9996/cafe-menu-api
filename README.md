@@ -9,7 +9,7 @@ Node.js 기반 카페 메뉴 관리 **REST API**입니다. **Next.js(App Router)
 
 ---
 
-## ✅ 요구사항별 구현
+##  요구사항별 구현
 
 | 요구사항 | 구현 |
 |----------|------|
@@ -22,7 +22,7 @@ Node.js 기반 카페 메뉴 관리 **REST API**입니다. **Next.js(App Router)
 
 ---
 
-## 🧱 기술 스택
+##  기술 스택
 
 | 구분 | 사용 기술 |
 |------|-----------|
@@ -35,7 +35,7 @@ Node.js 기반 카페 메뉴 관리 **REST API**입니다. **Next.js(App Router)
 
 ---
 
-## 🚀 시작하기
+##  시작하기
 
 ```bash
 # 1. 의존성 설치
@@ -103,7 +103,7 @@ npm run build && npm start
 
 ---
 
-## 📦 데이터 모델
+##  데이터 모델
 
 정규화된 2개 테이블로 구성됩니다 — `categories` *1 : N* `menus`.
 
@@ -132,7 +132,7 @@ npm run build && npm start
 
 ---
 
-## 📐 응답 규격
+##  응답 규격
 
 모든 응답은 일관된 envelope 형식을 따릅니다.
 
@@ -161,7 +161,7 @@ npm run build && npm start
 
 ---
 
-## 📚 API 엔드포인트
+##  API 엔드포인트
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
@@ -339,7 +339,7 @@ curl -X DELETE http://localhost:3000/api/categories/5
 
 ---
 
-## 🧪 제출물 / 테스트
+##  제출물 / 테스트
 
 - **Postman Collection**: [`docs/cafe-menu.postman_collection.json`](docs/cafe-menu.postman_collection.json)
   - Postman → Import → 파일 선택 → 컬렉션 변수 `baseUrl` 확인 후 실행
@@ -348,7 +348,7 @@ curl -X DELETE http://localhost:3000/api/categories/5
 
 ---
 
-## ☁️ 배포 (Render)
+##  배포 (Render)
 
 이 저장소는 **Render Blueprint**(`render.yaml`)를 포함합니다.
 
@@ -365,11 +365,11 @@ curl -X DELETE http://localhost:3000/api/categories/5
 | `SEED_ON_EMPTY` | `true` | 빈 DB로 부팅 시 샘플 메뉴 자동 시드 |
 | `DATABASE_PATH` | (선택) | SQLite 파일 경로. 영속 디스크 사용 시 마운트 경로로 지정 |
 
-> ⚠️ **무료 티어 주의**: 디스크가 휘발성이라 재배포·재시작 시 데이터가 초기화되며(이때 `SEED_ON_EMPTY`로 자동 복구), 비활성 시 콜드 스타트(첫 요청 지연)가 발생합니다. 데이터 영속이 필요하면 유료 플랜의 **Persistent Disk**를 마운트하고 `DATABASE_PATH`를 그 경로로 지정하세요.
+> **무료 티어 주의**: 디스크가 휘발성이라 재배포·재시작 시 데이터가 초기화되며(이때 `SEED_ON_EMPTY`로 자동 복구), 비활성 시 콜드 스타트(첫 요청 지연)가 발생합니다. 데이터 영속이 필요하면 유료 플랜의 **Persistent Disk**를 마운트하고 `DATABASE_PATH`를 그 경로로 지정하세요.
 
 ---
 
-## 🗂 프로젝트 구조
+##  프로젝트 구조
 
 ```
 cafe-menu-api/
@@ -408,7 +408,7 @@ cafe-menu-api/
 
 ---
 
-## 🛠 구현 포인트
+## 구현 포인트
 
 - **계층 분리 아키텍처**: 라우트(`app/api`) → 검증(`validation`) → 데이터 접근(`repository`) → 직렬화(`serialize`)로 책임을 분리.
 - **SQL 인젝션 방지**: 모든 쿼리를 named parameter 바인딩으로 처리하고, 정렬 컬럼은 `SORT_COLUMNS` 화이트리스트로만 문자열 보간.

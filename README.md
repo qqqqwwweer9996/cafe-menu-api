@@ -2,6 +2,11 @@
 
 Node.js 기반 카페 메뉴 관리 **REST API**입니다. **Next.js(App Router) Route Handlers** + **SQLite(better-sqlite3)** 로 구현했으며, 메뉴 CRUD · 카테고리 필터링 · 가격 정렬 · 검색 · 페이지네이션과 **Swagger 인터랙티브 문서**, **zod 입력 검증**, **통일된 에러 응답**을 제공합니다.
 
+> 🔗 **라이브 API**: <https://cafe-menu-api-lchp.onrender.com>
+> 📘 **Swagger 문서**: <https://cafe-menu-api-lchp.onrender.com/api-docs>
+>
+> *Render 무료 티어 — 비활성 후 첫 요청은 콜드 스타트로 수십 초 지연될 수 있습니다.*
+
 ---
 
 ## ✅ 요구사항별 구현
@@ -339,7 +344,7 @@ curl -X DELETE http://localhost:3000/api/categories/5
 - **Postman Collection**: [`docs/cafe-menu.postman_collection.json`](docs/cafe-menu.postman_collection.json)
   - Postman → Import → 파일 선택 → 컬렉션 변수 `baseUrl` 확인 후 실행
 - **Swagger UI**: 서버 실행 후 `http://localhost:3000/api-docs` 에서 직접 요청 테스트 가능
-- **배포(Render)**: 아래 [☁️ 배포](#️-배포-render) 섹션 참고 — 배포 후 발급 URL을 여기에 기입
+- **배포(Render)**: <https://cafe-menu-api-lchp.onrender.com> — Swagger: <https://cafe-menu-api-lchp.onrender.com/api-docs> (설정은 아래 [☁️ 배포](#️-배포-render) 섹션 참고)
 
 ---
 

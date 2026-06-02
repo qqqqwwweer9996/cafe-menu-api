@@ -1,11 +1,11 @@
 {
   "info": {
     "name": "Cafe Menu API",
-    "description": "Cafe menu management REST API (Next.js Route Handlers + SQLite). Set the `baseUrl` collection variable (defaults to http://localhost:3000).",
+    "description": "Cafe menu management REST API (Next.js Route Handlers + SQLite). The `baseUrl` variable defaults to the live Render deployment; switch it to http://localhost:3000 for local testing.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "baseUrl", "value": "https://cafe-menu-api-lchp.onrender.com" },
     { "key": "menuId", "value": "1" },
     { "key": "categoryId", "value": "5" }
   ],

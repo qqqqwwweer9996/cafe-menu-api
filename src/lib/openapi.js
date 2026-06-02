@@ -1,5 +1,4 @@
-// OpenAPI 3.0 specification served at GET /api/docs and rendered by Swagger UI
-// at /api-docs.
+// OpenAPI 3.0 명세. GET /api/docs로 제공되고 /api-docs의 Swagger UI가 이를 읽어 렌더링한다.
 
 const menuProperties = {
   id: { type: "integer", example: 1 },

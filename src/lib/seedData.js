@@ -1,14 +1,16 @@
 import { SAMPLE_MENUS } from "./sampleData.js";
 
 /**
- * Insert the sample menus if the database has no menus yet. Operates on the
- * passed-in connection (rather than importing `db`) to avoid a circular import
- * with db.js. Used by the SEED_ON_EMPTY startup hook.
+ * DB에 메뉴가 하나도 없을 때만 샘플 메뉴를 삽입한다.
+ * db.js와의 순환 import를 피하기 위해 db를 import하지 않고 인자로 받는다.
+ * SEED_ON_EMPTY 시작 훅(db.js)에서 호출된다.
+ * @returns 시드를 수행했으면 true, 이미 데이터가 있어 건너뛰면 false.
  */
 export function seedIfEmpty(db) {
   const count = db.prepare("SELECT COUNT(*) AS count FROM menus").get().count;
-  if (count > 0) return false;
+  if (count > 0) return false; // 이미 데이터 있음 → 아무것도 안 함
 
+  // 반복 실행할 문장들을 미리 prepare
   const insertCategory = db.prepare(
     "INSERT INTO categories (name) VALUES (?) ON CONFLICT(name) DO NOTHING"
   );
@@ -18,9 +20,10 @@ export function seedIfEmpty(db) {
      VALUES (@name, @description, @price, @categoryId, @imageUrl, @isAvailable)`
   );
 
+  // 트랜잭션으로 한 번에 삽입(중간 실패 시 전체 롤백)
   const insertAll = db.transaction((menus) => {
     for (const m of menus) {
-      insertCategory.run(m.category);
+      insertCategory.run(m.category); // 카테고리 없으면 생성
       const categoryId = getCategory.get(m.category).id;
       insertMenu.run({
         name: m.name,

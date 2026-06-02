@@ -1,8 +1,10 @@
+// API 응답 포맷 + 중앙 에러 처리 헬퍼.
+// 모든 라우트가 동일한 envelope 형태로 응답하도록 통일한다.
 import { ZodError } from "zod";
 import { AppError, ValidationError } from "./errors.js";
 
 /**
- * Standard success envelope:
+ * 성공 응답 형태:
  *   { "success": true, "data": <payload>, "meta"?: <object> }
  */
 export function ok(data, { status = 200, meta } = {}) {
@@ -12,12 +14,13 @@ export function ok(data, { status = 200, meta } = {}) {
   );
 }
 
+/** 201 Created 단축 헬퍼(생성 응답용). */
 export function created(data, { meta } = {}) {
   return ok(data, { status: 201, meta });
 }
 
 /**
- * Standard error envelope:
+ * 실패 응답 형태:
  *   { "success": false, "error": { "code", "message", "details"? } }
  */
 export function fail({
@@ -33,10 +36,11 @@ export function fail({
 }
 
 /**
- * Central error handler. Maps known error types to consistent responses so
- * every route handler can simply `catch (err) { return handleError(err); }`.
+ * 중앙 에러 핸들러. 알려진 에러 타입을 일관된 응답으로 변환한다.
+ * 덕분에 각 라우트는 `catch (err) { return handleError(err); }` 한 줄이면 된다.
  */
 export function handleError(err) {
+  // zod 검증 실패 → 400 + 필드별 상세 메시지
   if (err instanceof ZodError) {
     return fail({
       status: 400,
@@ -49,6 +53,7 @@ export function handleError(err) {
     });
   }
 
+  // 의도적으로 던진 앱 에러(NotFound/Conflict 등) → 해당 status/code 그대로
   if (err instanceof AppError) {
     return fail({
       status: err.status,
@@ -58,12 +63,12 @@ export function handleError(err) {
     });
   }
 
-  // Unexpected error — log server-side, return a generic message to the client.
+  // 예상치 못한 에러 → 서버 로그에 남기고 클라이언트엔 일반 메시지(500)
   console.error("[cafe-menu-api] Unhandled error:", err);
   return fail({});
 }
 
-/** Parse a JSON request body, raising a 400 ValidationError on malformed input. */
+/** 요청 body를 JSON으로 파싱한다. 잘못된 JSON이면 400 ValidationError를 던진다. */
 export async function parseJsonBody(request) {
   try {
     return await request.json();

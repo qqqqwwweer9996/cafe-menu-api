@@ -1,16 +1,19 @@
+// 데이터 접근 계층(Repository).
+// 라우트 핸들러는 이 모듈의 함수만 호출하고, 실제 SQL은 여기에 모아둔다.
+// 모든 쿼리는 prepared statement + named parameter 바인딩을 사용한다(SQL 인젝션 방지).
 import db from "./db.js";
 import { serializeMenu, serializeCategory } from "./serialize.js";
 import { ConflictError } from "./errors.js";
 
-// Whitelist of sortable fields -> actual (qualified) column names. Guards against
-// SQL injection since the sort column is interpolated, not bound.
+// 정렬 허용 컬럼 화이트리스트. 정렬 컬럼은 바인딩이 아니라 문자열로 SQL에 끼워 넣으므로,
+// 외부 입력을 그대로 쓰지 않고 이 매핑에 있는 값만 사용해 SQL 인젝션을 막는다.
 const SORT_COLUMNS = {
   price: "m.price",
   name: "m.name",
   createdAt: "m.created_at",
 };
 
-// Columns selected for every menu read, joining the category name in.
+// 메뉴 조회 시 공통으로 쓰는 SELECT. categories와 JOIN해 카테고리 이름(category)을 함께 가져온다.
 const MENU_SELECT = `
   SELECT m.id, m.name, m.description, m.price,
          m.category_id, c.name AS category,
@@ -20,19 +23,21 @@ const MENU_SELECT = `
 `;
 
 /* ------------------------------------------------------------------ */
-/* Categories                                                          */
+/* 카테고리(Categories)                                                */
 /* ------------------------------------------------------------------ */
 
-/** Resolve a category name to its id, creating the category if needed. */
+/** 카테고리 이름으로 id를 찾고, 없으면 새로 만들어 id를 반환한다(upsert). */
 export function getOrCreateCategory(name) {
+  // 이미 있으면 무시(ON CONFLICT), 없으면 삽입
   db.prepare(
     "INSERT INTO categories (name) VALUES (?) ON CONFLICT(name) DO NOTHING"
   ).run(name);
   return db.prepare("SELECT id FROM categories WHERE name = ?").get(name).id;
 }
 
-/** List all categories with the number of menus in each. */
+/** 전체 카테고리를 각 카테고리에 속한 메뉴 수(menuCount)와 함께 반환한다. */
 export function listCategories() {
+  // 메뉴가 0개인 카테고리도 보이도록 LEFT JOIN 사용
   const rows = db
     .prepare(
       `SELECT c.id, c.name, c.created_at, COUNT(m.id) AS menuCount
@@ -45,7 +50,7 @@ export function listCategories() {
   return rows.map(serializeCategory);
 }
 
-/** Create a category by name. Throws ConflictError if the name already exists. */
+/** 카테고리를 생성한다. 같은 이름이 이미 있으면 ConflictError(409)를 던진다. */
 export function createCategory(name) {
   const existing = db
     .prepare("SELECT id FROM categories WHERE name = ?")
@@ -61,13 +66,15 @@ export function createCategory(name) {
 }
 
 /**
- * Delete a category. Returns false if it does not exist; throws ConflictError
- * if any menus still reference it (the FK would otherwise block the delete).
+ * 카테고리를 삭제한다.
+ * - 존재하지 않으면 false 반환(라우트에서 404 처리).
+ * - 참조 중인 메뉴가 있으면 ConflictError(409)를 던진다(외래 키 보호).
  */
 export function deleteCategory(id) {
   const existing = db.prepare("SELECT id FROM categories WHERE id = ?").get(id);
   if (!existing) return false;
 
+  // 이 카테고리를 쓰는 메뉴가 남아 있으면 삭제 불가
   const inUse = db
     .prepare("SELECT COUNT(*) AS count FROM menus WHERE category_id = ?")
     .get(id).count;
@@ -82,11 +89,11 @@ export function deleteCategory(id) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Menus                                                               */
+/* 메뉴(Menus)                                                         */
 /* ------------------------------------------------------------------ */
 
 /**
- * List menus with optional filtering, searching, sorting and pagination.
+ * 메뉴 목록 조회. 필터(카테고리/검색/가격범위/판매여부) + 정렬 + 페이지네이션 지원.
  * @returns {{ items: object[], pagination: { page, limit, total, totalPages } }}
  */
 export function listMenus(params) {
@@ -102,15 +109,16 @@ export function listMenus(params) {
     limit,
   } = params;
 
+  // 전달된 파라미터에 따라 WHERE 조건과 바인딩 인자를 동적으로 구성한다.
   const conditions = [];
   const args = {};
 
   if (category !== undefined) {
-    conditions.push("c.name = @category");
+    conditions.push("c.name = @category"); // 카테고리 이름으로 필터(JOIN된 c.name)
     args.category = category;
   }
   if (search !== undefined) {
-    conditions.push("m.name LIKE @search");
+    conditions.push("m.name LIKE @search"); // 메뉴명 부분 검색
     args.search = `%${search}%`;
   }
   if (minPrice !== undefined) {
@@ -127,9 +135,10 @@ export function listMenus(params) {
   }
 
   const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  const sortColumn = SORT_COLUMNS[sort] ?? "m.created_at";
+  const sortColumn = SORT_COLUMNS[sort] ?? "m.created_at"; // 화이트리스트 통과 값만 사용
   const orderSql = order === "asc" ? "ASC" : "DESC";
 
+  // 페이지네이션 메타용 전체 개수(필터 적용 상태)
   const total = db
     .prepare(
       `SELECT COUNT(*) AS count
@@ -138,6 +147,7 @@ export function listMenus(params) {
     )
     .get(args).count;
 
+  // 실제 페이지 데이터 조회. 동일 정렬값일 때 순서가 흔들리지 않도록 id를 보조 정렬키로 사용.
   const offset = (page - 1) * limit;
   const rows = db
     .prepare(
@@ -158,12 +168,14 @@ export function listMenus(params) {
   };
 }
 
+/** id로 메뉴 단건 조회. 없으면 null. */
 export function getMenuById(id) {
   return serializeMenu(
     db.prepare(`${MENU_SELECT} WHERE m.id = ?`).get(id)
   );
 }
 
+/** 메뉴 생성. category(이름)는 자동으로 category_id로 변환해 저장한다. */
 export function createMenu(data) {
   const categoryId = getOrCreateCategory(data.category);
   const info = db
@@ -177,14 +189,14 @@ export function createMenu(data) {
       price: data.price,
       categoryId,
       imageUrl: data.imageUrl ?? null,
-      isAvailable: data.isAvailable === false ? 0 : 1,
+      isAvailable: data.isAvailable === false ? 0 : 1, // 기본값 true(1)
     });
 
   return getMenuById(info.lastInsertRowid);
 }
 
-// Simple (directly-bound) updatable fields. `category` is handled separately
-// because it must be resolved to a category_id.
+// 값을 그대로 바인딩하는 수정 가능 필드(컬럼 매핑). `category`는 category_id로 변환이
+// 필요하므로 아래 updateMenu에서 따로 처리한다.
 const SIMPLE_UPDATE_FIELDS = {
   name: "name",
   description: "description",
@@ -194,13 +206,14 @@ const SIMPLE_UPDATE_FIELDS = {
 };
 
 /**
- * Update an existing menu. Returns the updated record, or null if the id does
- * not exist.
+ * 메뉴 수정. 전달된 필드만 갱신한다.
+ * @returns 수정된 메뉴, id가 없으면 null.
  */
 export function updateMenu(id, data) {
   const existing = db.prepare("SELECT id FROM menus WHERE id = ?").get(id);
   if (!existing) return null;
 
+  // 전달된 필드만 골라 SET 절을 동적으로 만든다.
   const assignments = [];
   const args = { id };
 
@@ -211,13 +224,14 @@ export function updateMenu(id, data) {
       key === "isAvailable" ? (data[key] ? 1 : 0) : data[key] ?? null;
   }
 
+  // 카테고리는 이름 → id 변환 후 반영
   if (data.category !== undefined) {
     assignments.push("category_id = @categoryId");
     args.categoryId = getOrCreateCategory(data.category);
   }
 
   if (assignments.length > 0) {
-    assignments.push("updated_at = datetime('now')");
+    assignments.push("updated_at = datetime('now')"); // 수정 시각 갱신
     db.prepare(`UPDATE menus SET ${assignments.join(", ")} WHERE id = @id`).run(
       args
     );
@@ -226,18 +240,21 @@ export function updateMenu(id, data) {
   return getMenuById(id);
 }
 
+/** 메뉴 삭제. 실제로 삭제됐으면 true. */
 export function deleteMenu(id) {
   return db.prepare("DELETE FROM menus WHERE id = ?").run(id).changes > 0;
 }
 
-/** Aggregate statistics: overall + per-category counts and price summaries. */
+/** 통계: 전체 메뉴 수·평균가 + 카테고리별 개수/가격 요약. */
 export function getStats() {
+  // 전체 합계
   const totals = db
     .prepare(
       "SELECT COUNT(*) AS count, COALESCE(ROUND(AVG(price)), 0) AS avgPrice FROM menus"
     )
     .get();
 
+  // 카테고리별 집계(메뉴가 있는 카테고리만: HAVING COUNT > 0)
   const byCategory = db
     .prepare(
       `SELECT c.name             AS category,

@@ -1,6 +1,6 @@
-// Sample cafe menus used by both the manual seed script (`npm run seed`) and
-// the optional auto-seed-on-empty behaviour (SEED_ON_EMPTY=true) for fresh
-// deployments on ephemeral filesystems (e.g. Render free tier).
+// 샘플 카페 메뉴 데이터.
+// 수동 시드 스크립트(`npm run seed`)와 빈 DB 자동 시드(SEED_ON_EMPTY=true)에서 공용으로 사용한다.
+// 휘발성 디스크 배포 환경(예: Render 무료 티어)에서 배포 직후 시연용 데이터로 쓰인다.
 export const SAMPLE_MENUS = [
   {
     name: "아메리카노",

@@ -1,8 +1,11 @@
+// 랜딩 페이지(/). 엔드포인트 목록과 Swagger 문서 링크를 보여주는 안내용 페이지.
+
 const linkStyle = {
   color: "#38bdf8",
   textDecoration: "none",
 };
 
+// 랜딩 페이지에 표로 나열할 엔드포인트 목록
 const endpoints = [
   { method: "GET", path: "/api/menus", note: "목록 (필터·정렬·검색·페이지네이션)" },
   { method: "POST", path: "/api/menus", note: "메뉴 생성" },

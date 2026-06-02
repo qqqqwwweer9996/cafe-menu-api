@@ -1,3 +1,4 @@
+// 앱 전역 레이아웃(App Router 필수). 모든 페이지를 감싸는 <html>/<body> 골격.
 export const metadata = {
   title: "Cafe Menu API",
   description: "Cafe menu management REST API (Next.js Route Handlers + SQLite)",
